@@ -1,0 +1,62 @@
+target C {
+     platform: {
+    name: "arduino",
+    board: "arduino:avr:mega",
+    baud-rate: 9600,
+    flash: false
+  }
+}
+
+preamble {=
+#include <stdio.h>
+#include <stdlib.h>
+
+#define HIGH 1
+#define LOW 0
+#define OUTPUT 1
+
+void pinMode(int pin, int mode) {
+    printf("[Init] Pin %d set to mode=%d (OUTPUT=%d)\n", pin, mode, OUTPUT);
+}
+
+void digitalWrite(int pin, int value) {
+    printf("[LED] Pin %d set to %s\n", pin, (value == HIGH ? "HIGH" : "LOW"));
+}
+=}
+
+main reactor KnightRider {
+    state ledPins:int*;
+    state currentIndex:int = 0;
+    state direction:int = 1;
+
+    timer step(0 msec, 200 msec);
+
+    reaction(startup) {=
+        // تخصيص المصفوفة
+        self->ledPins = malloc(6 * sizeof(int));
+        self->ledPins[0] = 2;
+        self->ledPins[1] = 3;
+        self->ledPins[2] = 4;
+        self->ledPins[3] = 5;
+        self->ledPins[4] = 6;
+        self->ledPins[5] = 7;
+
+        for (int i = 0; i < 6; i++) {
+            pinMode(self->ledPins[i], OUTPUT);
+        }
+    =}
+
+    reaction(step) {=
+        for (int i = 0; i < 6; i++) {
+            digitalWrite(self->ledPins[i], LOW);
+        }
+
+        digitalWrite(self->ledPins[self->currentIndex], HIGH);
+
+        self->currentIndex += self->direction;
+
+        if (self->currentIndex == 5 || self->currentIndex == 0) {
+            self->direction = -self->direction;
+        }
+    =}
+}
